@@ -81,6 +81,9 @@ SG1 Iris Lights owns only blocks marked `SG1_IRIS_LIGHTS_BEGIN` /
 unknown files or overwrite later edits. Its backend changes are recorded in a
 checksum manifest below `web/.sg1-iris-lights/` and exact originals are retained
 below `web/backups/`.
+If another compatible integration later changes a shared file, update and
+uninstall remove only the explicitly marked Iris Lights blocks and preserve the
+newer surrounding content. Add-on-owned runtime files remain checksum protected.
 
 The original physical indicator reference patch and behavior were contributed
 by Jan. This official companion packaging, dependency contract, calibration

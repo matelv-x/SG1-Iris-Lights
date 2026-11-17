@@ -8,6 +8,8 @@
   the first four-red-pixel indication appears for an incoming connection.
 - Keeps the warning headless and server-side, and respects the SG1 audio-enable
   setting and Lamp Mode priority.
+- Updates and uninstalls now remove only owned marker blocks from shared files
+  that Stellar Archive or another compatible add-on changed later.
 
 ## 1.1.0
 

@@ -113,12 +113,32 @@ class InstallerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'SG1 Iris must be installed'):
             INSTALLER.install(self.root)
 
-    def test_refuses_to_uninstall_over_later_changes(self):
+    def test_preserves_later_changes_outside_owned_blocks(self):
         INSTALLER.install(self.root)
         path = self.root / 'web/retro/dial.html'
         path.write_text(path.read_text(encoding='utf-8') + '<!-- later change -->\n', encoding='utf-8')
+        INSTALLER.install(self.root, update=True)
+        self.assertIn('<!-- later change -->', path.read_text(encoding='utf-8'))
+        INSTALLER.uninstall(self.root)
+        self.assertIn('<!-- later change -->', path.read_text(encoding='utf-8'))
+
+    def test_refuses_to_remove_later_changes_to_owned_runtime_file(self):
+        INSTALLER.install(self.root)
+        path = self.root / 'classes/StargateMilkyWay/iris_lights.py'
+        path.write_text(path.read_text(encoding='utf-8') + '# later change\n', encoding='utf-8')
         with self.assertRaisesRegex(ValueError, 'later changes'):
             INSTALLER.uninstall(self.root)
+
+    def test_preserves_stellar_changes_to_web_server_during_update(self):
+        INSTALLER.install(self.root)
+        path = self.root / 'classes/web_server.py'
+        text = path.read_text(encoding='utf-8').replace(
+            'class Handler:\n', 'class Handler:\n    stellar_revision = 1536\n', 1)
+        path.write_text(text, encoding='utf-8')
+        INSTALLER.install(self.root, update=True)
+        updated = path.read_text(encoding='utf-8')
+        self.assertIn('stellar_revision = 1536', updated)
+        self.assertEqual(updated.count('SG1_IRIS_LIGHTS_BEGIN'), 2)
 
     def test_stellar_archive_post_anchor_is_supported(self):
         path = self.root / 'classes/web_server.py'

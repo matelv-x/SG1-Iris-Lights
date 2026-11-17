@@ -44,6 +44,40 @@ def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def without_owned_blocks(text, name):
+    """Remove only this add-on's marked blocks from a later-edited shared file."""
+    output = []
+    inside = False
+    blocks = 0
+    begin = MARKER
+    end = 'SG1_IRIS_LIGHTS_END'
+    for line in text.splitlines(keepends=True):
+        if begin in line:
+            if inside:
+                raise ValueError('{}: nested Iris Lights marker'.format(name))
+            inside = True
+            blocks += 1
+            continue
+        if end in line:
+            if not inside:
+                raise ValueError('{}: unmatched Iris Lights end marker'.format(name))
+            inside = False
+            continue
+        if not inside:
+            output.append(line)
+    if inside or blocks == 0:
+        raise ValueError('{}: incomplete or missing Iris Lights markers'.format(name))
+    result = ''.join(output)
+    if name == 'classes/web_server.py':
+        owned_elif = '            elif request_path == "/get/is_alive":\n'
+        require_once(result, owned_elif, name)
+        result = result.replace(owned_elif,
+                                '            if request_path == "/get/is_alive":\n', 1)
+    if name.endswith('.py'):
+        ast.parse(result, filename=name)
+    return result
+
+
 def validate_prerequisites(root):
     iris_js = root / 'web/retro/js/iris.js'
     iris_css = root / 'web/retro/css/iris.css'
@@ -296,19 +330,27 @@ def uninstall(root, dry_run=False):
     if manifest.get('schema') != 1:
         raise ValueError('Unsupported SG1 Iris Lights install state')
     backup = Path(manifest['backup'])
+    restored = {}
     for name, hashes in manifest['modified'].items():
-        if digest((root / name).read_bytes()) != hashes['after']:
-            raise ValueError('Refusing to overwrite later changes in {}'.format(name))
+        current = (root / name).read_bytes()
         if digest((backup / name).read_bytes()) != hashes['before']:
             raise ValueError('Backup checksum mismatch in {}'.format(name))
+        if digest(current) == hashes['after']:
+            restored[name] = (backup / name).read_text(encoding='utf-8')
+        else:
+            restored[name] = without_owned_blocks(current.decode('utf-8'), name)
     for name, expected in manifest['added'].items():
         if digest((root / name).read_bytes()) != expected:
             raise ValueError('Refusing to remove later changes in {}'.format(name))
     if dry_run:
         print('Uninstall dry run complete; no files changed.')
         return
-    for name in manifest['modified']:
-        shutil.copy2(backup / name, root / name)
+    for name, content in restored.items():
+        path = root / name
+        temporary = path.with_suffix(path.suffix + '.sg1-iris-lights-tmp')
+        temporary.write_text(content, encoding='utf-8')
+        shutil.copymode(path, temporary)
+        os.replace(temporary, path)
     for name in manifest['added']:
         (root / name).unlink()
     state_file.unlink()

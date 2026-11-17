@@ -11,10 +11,12 @@ Date: 2026-11-16 (America/Chicago)
 
 ## Passed checks
 
-- Eighteen hardware-free Iris Lights unit and installer tests, including both the
+- Twenty hardware-free Iris Lights unit and installer tests, including both the
   clean SG1 v4 and Stellar Archive-managed `web_server.py` layouts.
 - Direct-write kawoosh replacement, once-per-incoming warning playback, and
   disabled-indicator silence are covered by dedicated regression tests.
+- Later compatible Stellar/shared-file changes survive both update and
+  uninstall, while edits to add-on-owned runtime files remain fail-closed.
 - Headless incoming auto-close, manual incoming override, optional auto-open,
   preference persistence, Lamp Mode priority, and closed-Iris wormhole masking.
 - Install dry-run, install, Python compilation, checksum-verified uninstall

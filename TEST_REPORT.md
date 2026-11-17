@@ -1,4 +1,4 @@
-# SG1 Iris Lights 1.0.0 validation
+# SG1 Iris Lights 1.1.0 validation
 
 Date: 2026-11-16 (America/Chicago)
 
@@ -11,8 +11,10 @@ Date: 2026-11-16 (America/Chicago)
 
 ## Passed checks
 
-- Ten hardware-free Iris Lights unit and installer tests, including both the
+- Fifteen hardware-free Iris Lights unit and installer tests, including both the
   clean SG1 v4 and Stellar Archive-managed `web_server.py` layouts.
+- Headless incoming auto-close, manual incoming override, optional auto-open,
+  preference persistence, Lamp Mode priority, and closed-Iris wormhole masking.
 - Install dry-run, install, Python compilation, checksum-verified uninstall
   dry-run, and uninstall on a newly assembled SG1 v4 + Retro + SG1 Iris tree.
 - SG1 Iris update followed by successful Iris Lights reapplication and another
@@ -23,10 +25,16 @@ Date: 2026-11-16 (America/Chicago)
 - Stellar Archive dependency, manifest, dirty-package rejection, browser,
   installer, original-only, and navigation tests.
 
-## Not yet verified
+## Physical validation completed for 1.0.0
 
-- No files were deployed to or executed on an unmodified physical Stargate.
-- The four LED positions, brightness, and appearance over every physical
-  wormhole animation still require acceptance on a 122-pixel gate.
-- Until that acceptance is complete, version 1.0.0 is software-validated but
-  not hardware-verified.
+- Installed on gate 200 with its 122-pixel wormhole strip. The owner confirmed
+  the four red positions were physically visible. A real Seed Ship 115 to gate
+  200 incoming connection established successfully and the 1.0.0 overlay was
+  exercised over the active wormhole.
+
+## Pending physical validation for 1.1.0
+
+- Confirm automatic headless close on a new real incoming connection.
+- Confirm that a closed Iris suppresses the physical kawoosh and wormhole strip
+  while leaving only the four red pixels visible.
+- Confirm automatic open and normal strip restoration after disconnect.

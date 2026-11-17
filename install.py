@@ -103,7 +103,7 @@ def changed_files(root):
     anchor = "        self.log.log(f'Disengaged Wormhole after {timedelta(seconds=int(time() - self.open_time))}')"
     new[name] = insert(new[name], anchor,
                        '        # SG1_IRIS_LIGHTS_BEGIN\n'
-                       '        self.stargate.iris_lights.set_closed(False)\n'
+                       '        self.stargate.iris_lights.set_closed(False, manual=False)\n'
                        '        # SG1_IRIS_LIGHTS_END\n', name, before=True)
 
     name = 'classes/web_server.py'
@@ -137,7 +137,8 @@ def changed_files(root):
                   '                try:\n'
                   '                    state = self.stargate.iris_lights.set_preferences(\n'
                   '                        data.get("enabled"), data.get("flash_interval_seconds"),\n'
-                  '                        data.get("offset"))\n'
+                  '                        data.get("offset"), data.get("auto_incoming", True),\n'
+                  '                        data.get("auto_open_seconds", 0))\n'
                   '                    self.send_json_response({"success": True, **state})\n'
                   '                except ValueError as error:\n'
                   '                    self.send_json_response({"success": False, "message": str(error)})\n'
@@ -159,6 +160,23 @@ def changed_files(root):
               Enable four red iris LEDs
             </label>
           </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="iris-lights-closed">
+            <label class="form-check-label" for="iris-lights-closed">
+              Iris ON (closed)
+            </label>
+          </div>
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="iris-lights-auto-incoming">
+            <label class="form-check-label" for="iris-lights-auto-incoming">
+              Close Iris automatically for incoming connections
+            </label>
+          </div>
+          <label class="form-label" for="iris-lights-auto-open">
+            Automatic open after (seconds; 0 = disabled)
+          </label>
+          <input class="form-control" type="number" id="iris-lights-auto-open"
+                 min="0" max="3600" step="1">
           <label class="form-label" for="iris-lights-interval">
             Idle flash interval (seconds)
           </label>
@@ -170,7 +188,9 @@ def changed_files(root):
           <input class="form-control" type="number" id="iris-lights-offset"
                  min="0" step="1">
           <p id="iris-lights-positions" class="form-text"></p>
-          <p class="form-text">During an active wormhole, the four pixels remain red.</p>
+          <p class="form-text">When the Iris is closed, kawoosh and wormhole illumination
+             are blocked; only the four red pixels remain visible. The Iris opens when the
+             connection ends or when the optional timer expires.</p>
           <button class="btn btn-primary" type="button" id="iris-lights-save">
             Save Iris Lights settings
           </button>

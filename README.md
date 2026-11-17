@@ -2,17 +2,24 @@
 
 Optional physical LED companion for
 [SG1 Iris](https://github.com/matelv-x/SG1-Iris) on StargateProject SG1 v4.
-It maps the browser Iris state to four red pixels on the existing wormhole LED
-strip. No additional LED hardware is required.
+It maps SG1 Iris state to four red pixels on the existing wormhole LED strip
+and supports physical gates that do not run a local Retro browser. No
+additional LED hardware is required.
 
 The feature is installed **off by default**. The SG1 `config.htm` page controls:
 
 - enable or disable;
+- physical `Iris ON (closed)` / `OFF (open)` control;
+- automatic close for incoming connections without a gate display;
+- optional automatic-open timer (`0` disables the timer);
 - idle flash interval from 1 to 3600 seconds;
 - first-pixel calibration offset, with the four calculated LED indices shown.
 
-When the Iris is closed, four red pixels flash while the gate is idle and stay
-red over an active wormhole animation. The indicator opens after disconnect.
+When the Iris is closed, four red pixels flash while the gate is idle. During
+dialing and an active wormhole they stay red while the kawoosh and wormhole
+strip illumination are blocked. The Iris opens after disconnect. A manual
+open is available from `config.htm` on any phone or computer that can reach
+the gate; a local gate display is not required.
 Lamp Mode has priority and suspends Iris Lights while it owns the strip.
 
 ## Requirements

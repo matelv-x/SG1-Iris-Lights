@@ -44,7 +44,7 @@ class IrisLightsTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def test_opt_in_overlay_and_lamp_priority(self):
+    def test_closed_iris_blocks_wormhole_and_lamp_has_priority(self):
         self.assertFalse(self.lights.status()['enabled'])
         self.assertEqual(self.lights.indices, (0, 30, 61, 91))
         self.lights.set_closed(True)
@@ -56,6 +56,8 @@ class IrisLightsTests(unittest.TestCase):
         result = self.lights.overlay(blue)
         self.assertEqual([i for i, rgb in enumerate(result) if rgb == (180, 0, 0)],
                          [4, 34, 65, 95])
+        self.assertTrue(all(rgb == (0, 0, 0) for i, rgb in enumerate(result)
+                            if i not in (4, 34, 65, 95)))
         self.gate.lamp_mode = True
         self.assertEqual(self.lights.overlay(blue), blue)
 
@@ -99,6 +101,43 @@ class IrisLightsTests(unittest.TestCase):
     def test_too_few_pixels_is_rejected(self):
         with self.assertRaisesRegex(ValueError, 'at least four'):
             IrisLights(Gate(self.temp.name, count=3))
+
+    def test_headless_incoming_closes_and_disconnect_opens(self):
+        self.lights.set_preferences(True, 3, 0, True, 0)
+        self.gate.address_buffer_incoming = [14]
+        self.lights.tick(100.0)
+        self.assertTrue(self.lights.status()['closed'])
+        self.assertEqual(self.gate.wh_manager.pixels.colors[0], (180, 0, 0))
+        self.gate.address_buffer_incoming = []
+        self.lights.tick(101.0)
+        self.assertFalse(self.lights.status()['closed'])
+
+    def test_manual_open_during_incoming_is_not_immediately_reclosed(self):
+        self.lights.set_preferences(True, 3, 0, True, 0)
+        self.gate.wormhole_active = 'incoming'
+        self.lights.tick(100.0)
+        self.lights.set_closed(False)
+        self.lights.tick(101.0)
+        self.assertFalse(self.lights.status()['closed'])
+
+    def test_optional_auto_open_timer(self):
+        self.lights.set_preferences(True, 3, 0, False, 5)
+        self.lights.set_closed(True)
+        due = self.lights.closed_since
+        self.lights.tick(due + 4.9)
+        self.assertTrue(self.lights.status()['closed'])
+        self.lights.tick(due + 5.0)
+        self.assertFalse(self.lights.status()['closed'])
+
+    def test_new_preferences_persist(self):
+        self.lights.set_preferences(True, 4, 2, False, 45)
+        state = IrisLights(self.gate).status()
+        self.assertFalse(state['auto_incoming'])
+        self.assertEqual(state['auto_open_seconds'], 45)
+
+    def test_invalid_auto_open_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'auto_open_seconds'):
+            self.lights.set_preferences(True, 3, 0, True, 3601)
 
 
 if __name__ == '__main__':

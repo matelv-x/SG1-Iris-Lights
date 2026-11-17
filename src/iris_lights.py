@@ -1,4 +1,4 @@
-"""Optional physical LED indication of the browser SG1 Iris state."""
+"""Physical SG1 Iris state and indication on the wormhole LED strip."""
 
 import json
 import os
@@ -9,6 +9,7 @@ from time import monotonic
 
 class IrisLights:
     DEFAULT_FLASH_INTERVAL = 3
+    DEFAULT_AUTO_OPEN_SECONDS = 0
     FLASH_DURATION = 0.18
     RED = (180, 0, 0)
 
@@ -23,7 +24,13 @@ class IrisLights:
         self.closed = False
         self.enabled = False
         self.flash_interval = self.DEFAULT_FLASH_INTERVAL
+        self.auto_incoming = True
+        self.auto_open_seconds = self.DEFAULT_AUTO_OPEN_SECONDS
         self.offset = 0
+        self.closed_since = None
+        self.incoming_seen = False
+        self.manual_open_during_incoming = False
+        self.steady_visible = False
         self.pulse_until = 0.0
         self.clear_pending = False
         self.clear_indices = ()
@@ -38,11 +45,17 @@ class IrisLights:
             interval = data.get('flash_interval_seconds', self.DEFAULT_FLASH_INTERVAL)
             if type(interval) is int and 1 <= interval <= 3600:
                 self.flash_interval = interval
+            self.auto_incoming = data.get('auto_incoming', True) is True
+            auto_open = data.get('auto_open_seconds', self.DEFAULT_AUTO_OPEN_SECONDS)
+            if type(auto_open) is int and 0 <= auto_open <= 3600:
+                self.auto_open_seconds = auto_open
             offset = data.get('offset', 0)
             if type(offset) is int:
                 self.offset = offset % self.count
         except (OSError, ValueError, TypeError):
             pass
+        if self.closed:
+            self.closed_since = monotonic()
         self.next_flash = monotonic() + self.flash_interval
 
     @property
@@ -57,6 +70,8 @@ class IrisLights:
             'led_count': self.count,
             'offset': self.offset,
             'enabled': self.enabled,
+            'auto_incoming': self.auto_incoming,
+            'auto_open_seconds': self.auto_open_seconds,
             'flash_interval_seconds': self.flash_interval,
         }
 
@@ -64,29 +79,47 @@ class IrisLights:
         with self.lock:
             return self.status_unlocked()
 
-    def set_closed(self, closed):
+    def set_closed(self, closed, manual=True):
         if type(closed) is not bool:
             raise ValueError('closed must be a boolean')
         with self.lock:
+            incoming = self._incoming_activity()
+            if manual and incoming:
+                self.manual_open_during_incoming = not closed
+            elif closed:
+                self.manual_open_during_incoming = False
             if self.closed == closed:
                 return self.status_unlocked()
             self.closed = closed
+            self.closed_since = monotonic() if closed else None
             self.next_flash = monotonic() + self.flash_interval
+            self.pulse_until = 0.0
+            if not closed:
+                self.clear_pending = True
+                self.clear_indices = self.indices
+                self.steady_visible = False
             self._save()
             return self.status_unlocked()
 
-    def set_preferences(self, enabled, interval, offset):
+    def set_preferences(self, enabled, interval, offset, auto_incoming=True,
+                        auto_open_seconds=0):
         if type(enabled) is not bool:
             raise ValueError('enabled must be a boolean')
         if type(interval) is not int or not 1 <= interval <= 3600:
             raise ValueError('flash_interval_seconds must be 1 to 3600')
         if type(offset) is not int or not 0 <= offset < self.count:
             raise ValueError('offset must be a valid wormhole LED index')
+        if type(auto_incoming) is not bool:
+            raise ValueError('auto_incoming must be a boolean')
+        if type(auto_open_seconds) is not int or not 0 <= auto_open_seconds <= 3600:
+            raise ValueError('auto_open_seconds must be 0 to 3600')
         with self.lock:
             old_indices = self.indices
             self.enabled = enabled
             self.flash_interval = interval
             self.offset = offset
+            self.auto_incoming = auto_incoming
+            self.auto_open_seconds = auto_open_seconds
             self.next_flash = monotonic() + interval
             self.pulse_until = 0.0
             if not enabled or old_indices != self.indices:
@@ -102,23 +135,30 @@ class IrisLights:
             'closed': self.closed,
             'offset': self.offset,
             'enabled': self.enabled,
+            'auto_incoming': self.auto_incoming,
+            'auto_open_seconds': self.auto_open_seconds,
             'flash_interval_seconds': self.flash_interval,
         }) + '\n', encoding='utf-8')
         os.replace(temporary, self.path)
 
     def overlay(self, pattern):
-        """Composite four red points over an active, nonempty wormhole frame."""
+        """Hide an active wormhole behind a closed Iris and show four red points."""
         with self.lock:
             closed = self.closed and self.enabled
             indices = self.indices
         if (not closed or getattr(self.stargate, 'lamp_mode', False)
-                or not self.stargate.wormhole_active
-                or not any(any(rgb) for rgb in pattern)):
+                or not self.stargate.wormhole_active):
             return pattern
-        result = list(pattern)
+        result = [(0, 0, 0)] * len(pattern)
         for index in indices:
             result[index] = self.RED
         return result
+
+    def _incoming_activity(self):
+        gate = self.stargate
+        return (str(gate.wormhole_active).lower() == 'incoming'
+                or bool(gate.address_buffer_incoming)
+                or bool(gate.locked_chevrons_incoming))
 
     def _idle(self):
         gate = self.stargate
@@ -144,11 +184,45 @@ class IrisLights:
             clear_indices = self.clear_indices
             self.clear_pending = False
             self.clear_indices = ()
+            auto_incoming = self.auto_incoming
+            auto_open_seconds = self.auto_open_seconds
+            closed_since = self.closed_since
+        incoming = self._incoming_activity()
+        if incoming and not self.incoming_seen:
+            self.incoming_seen = True
+            if self.enabled and auto_incoming and not self.manual_open_during_incoming:
+                self.set_closed(True, manual=False)
+                closed = True
+                closed_since = self.closed_since
+        elif not incoming and self.incoming_seen:
+            self.incoming_seen = False
+            self.manual_open_during_incoming = False
+            if closed and auto_incoming:
+                self.set_closed(False, manual=False)
+                closed = False
+                clear_pending = True
+                clear_indices = indices
+        if (closed and auto_open_seconds and closed_since is not None
+                and now - closed_since >= auto_open_seconds):
+            self.set_closed(False)
+            closed = False
+            clear_pending = True
+            clear_indices = indices
         idle = self._idle()
         if clear_pending and idle:
             for index in clear_indices:
                 self.pixels[index] = (0, 0, 0)
             self.pixels.show()
+        if closed and not idle and not self.stargate.wormhole_active:
+            if not self.steady_visible:
+                for index in range(self.count):
+                    self.pixels[index] = (0, 0, 0)
+                for index in indices:
+                    self.pixels[index] = self.RED
+                self.pixels.show()
+                self.steady_visible = True
+            return
+        self.steady_visible = False
         if self.pulse_until:
             if now >= self.pulse_until or not idle or not closed:
                 self.pulse_until = 0.0

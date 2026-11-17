@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0
+
+- Added headless automatic Iris close for incoming connections.
+- Added physical Iris ON/OFF and an optional automatic-open timer to config.
+- A closed Iris now blocks kawoosh and wormhole strip illumination, leaving
+  only the four red Iris pixels visible.
+- Manual opening during an incoming connection is respected until disconnect.
+
 ## 1.0.0
 
 - Packages Jan's optional four-pixel physical iris indicator as the separate

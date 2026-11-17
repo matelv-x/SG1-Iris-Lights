@@ -1,5 +1,12 @@
 # Changelog
 
+## Attribution
+
+- SG1 Iris Lights is based on Jan's original physical Iris LED indicator
+  project and patch. Jan is the original project creator; matelv-x modified
+  and adapted it into this separate companion add-on and maintains the added
+  SG1/Stellar Archive integration.
+
 ## 1.2.0
 
 - Blocks the direct-write kawoosh animation before its first frame when the

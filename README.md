@@ -6,6 +6,14 @@ It maps SG1 Iris state to four red pixels on the existing wormhole LED strip
 and supports physical gates that do not run a local Retro browser. No
 additional LED hardware is required.
 
+> **Project origin and credit:** This project is based on Jan's original
+> physical Iris LED indicator project and patch. Jan is the creator of the
+> original project and four-red-pixel indicator concept. The version in this
+> repository was modified and adapted by **matelv-x** into a separate SG1 Iris
+> companion add-on, with configuration controls, headless physical-gate
+> operation, kawoosh and wormhole blocking, incoming warning audio, safe
+> install/update/uninstall handling, and Stellar Archive integration.
+
 The feature is installed **off by default**. The SG1 `config.htm` page controls:
 
 - enable or disable;
@@ -85,10 +93,10 @@ If another compatible integration later changes a shared file, update and
 uninstall remove only the explicitly marked Iris Lights blocks and preserve the
 newer surrounding content. Add-on-owned runtime files remain checksum protected.
 
-The original physical indicator reference patch and behavior were contributed
-by Jan. This official companion packaging, dependency contract, calibration
-setting, update lifecycle and Stellar Archive integration are maintained by
-matelv-x.
+The original project, physical indicator patch and four-red-pixel behavior are
+Jan's work. The modified and adapted companion-add-on implementation,
+dependency contract, calibration controls, physical-gate extensions, update
+lifecycle and Stellar Archive integration are maintained by matelv-x.
 
 ## Hardware status
 

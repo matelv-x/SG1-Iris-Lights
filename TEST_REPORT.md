@@ -1,4 +1,4 @@
-# SG1 Iris Lights 1.1.0 validation
+# SG1 Iris Lights 1.2.0 validation
 
 Date: 2026-11-16 (America/Chicago)
 
@@ -11,8 +11,10 @@ Date: 2026-11-16 (America/Chicago)
 
 ## Passed checks
 
-- Fifteen hardware-free Iris Lights unit and installer tests, including both the
+- Eighteen hardware-free Iris Lights unit and installer tests, including both the
   clean SG1 v4 and Stellar Archive-managed `web_server.py` layouts.
+- Direct-write kawoosh replacement, once-per-incoming warning playback, and
+  disabled-indicator silence are covered by dedicated regression tests.
 - Headless incoming auto-close, manual incoming override, optional auto-open,
   preference persistence, Lamp Mode priority, and closed-Iris wormhole masking.
 - Install dry-run, install, Python compilation, checksum-verified uninstall
@@ -32,9 +34,11 @@ Date: 2026-11-16 (America/Chicago)
   200 incoming connection established successfully and the 1.0.0 overlay was
   exercised over the active wormhole.
 
-## Pending physical validation for 1.1.0
+## Pending physical validation for 1.2.0
 
 - Confirm automatic headless close on a new real incoming connection.
 - Confirm that a closed Iris suppresses the physical kawoosh and wormhole strip
   while leaving only the four red pixels visible.
 - Confirm automatic open and normal strip restoration after disconnect.
+- Confirm that no direct-write kawoosh frame reaches the strip while the Iris
+  is closed and that the existing incoming warning clip plays exactly once.

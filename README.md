@@ -20,6 +20,9 @@ dialing and an active wormhole they stay red while the kawoosh and wormhole
 strip illumination are blocked. The Iris opens after disconnect. A manual
 open is available from `config.htm` on any phone or computer that can reach
 the gate; a local gate display is not required.
+At the first four-red-pixel indication of each incoming connection, the gate
+plays its existing `Unscheduled Offworld Activation` SoundFX clip once. This
+is driven by the gate controller and does not require an open browser.
 Lamp Mode has priority and suspends Iris Lights while it owns the strip.
 
 ## Requirements

@@ -21,7 +21,13 @@ class Stargate:
         while True:
             self.schedule.run_pending() # Run any scheduled items
 ''',
-    'classes/StargateMilkyWay/wormhole_animation_manager.py': '''class Animation:
+    'classes/StargateMilkyWay/wormhole_animation_manager.py': '''from time import sleep
+
+class Animation:
+    def animate_kawoosh(self):
+        self.pixels.fill((1, 2, 3))
+        self.pixels.show()
+
     def apply(self, pattern):
         for index, led_state in enumerate(pattern):
             self.pixels[index] = led_state
@@ -86,6 +92,8 @@ class InstallerTests(unittest.TestCase):
         self.assertLess(stargate.index('self.iris_lights = IrisLights(self)'),
                         stargate.index('self.wh_manager.initialize_animation_manager()'))
         self.assertTrue((self.root / 'classes/StargateMilkyWay/iris_lights.py').is_file())
+        animation = (self.root / 'classes/StargateMilkyWay/wormhole_animation_manager.py').read_text(encoding='utf-8')
+        self.assertIn('if self.stargate.iris_lights.replace_kawoosh():', animation)
         settings = self.root / 'config/iris-lights.json'
         settings.parent.mkdir(parents=True)
         settings.write_text('{"enabled": true, "offset": 7}\n', encoding='utf-8')

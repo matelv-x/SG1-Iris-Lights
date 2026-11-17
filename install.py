@@ -94,7 +94,13 @@ def changed_files(root):
     new[name] = text
 
     name = 'classes/StargateMilkyWay/wormhole_animation_manager.py'
-    new[name] = insert(new[name], '        for index, led_state in enumerate(pattern):\n',
+    text = insert(new[name], '    def animate_kawoosh(self):\n',
+                  '        # SG1_IRIS_LIGHTS_BEGIN\n'
+                  '        if self.stargate.iris_lights.replace_kawoosh():\n'
+                  '            sleep(0.05)\n'
+                  '            return\n'
+                  '        # SG1_IRIS_LIGHTS_END\n', name)
+    new[name] = insert(text, '        for index, led_state in enumerate(pattern):\n',
                        '        # SG1_IRIS_LIGHTS_BEGIN\n'
                        '        pattern = self.stargate.iris_lights.overlay(pattern)\n'
                        '        # SG1_IRIS_LIGHTS_END\n', name, before=True)

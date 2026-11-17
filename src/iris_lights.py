@@ -12,6 +12,7 @@ class IrisLights:
     DEFAULT_AUTO_OPEN_SECONDS = 0
     FLASH_DURATION = 0.18
     RED = (180, 0, 0)
+    INCOMING_WARNING = '/audio_clips/unsceduald offworld activation.wav'
 
     def __init__(self, stargate):
         self.stargate = stargate
@@ -34,6 +35,7 @@ class IrisLights:
         self.pulse_until = 0.0
         self.clear_pending = False
         self.clear_indices = ()
+        self.incoming_warning_clip = None
         self.next_flash = monotonic() + self.flash_interval
         self._load()
 
@@ -154,6 +156,41 @@ class IrisLights:
             result[index] = self.RED
         return result
 
+    def show_closed(self):
+        """Replace the shared strip with the four closed-Iris indicators."""
+        with self.lock:
+            active = self.closed and self.enabled
+            indices = self.indices
+        if not active or getattr(self.stargate, 'lamp_mode', False):
+            return False
+        for index in range(self.count):
+            self.pixels[index] = (0, 0, 0)
+        for index in indices:
+            self.pixels[index] = self.RED
+        self.pixels.show()
+        self.steady_visible = True
+        return True
+
+    def replace_kawoosh(self):
+        """Block direct-write kawoosh frames while the physical Iris is closed."""
+        return self.show_closed()
+
+    def _play_incoming_warning(self):
+        """Play the existing SG1 warning once for this incoming connection."""
+        audio = getattr(getattr(self.stargate, 'app', None), 'audio', None)
+        if audio is None:
+            return
+        try:
+            if not audio.cfg.get('audio_enable'):
+                return
+            if self.incoming_warning_clip is None:
+                self.incoming_warning_clip = audio.init_wav_file(self.INCOMING_WARNING)
+            self.incoming_warning_clip.play()
+        except Exception as error:  # Audio backends expose implementation-specific errors.
+            log = getattr(self.stargate, 'log', None)
+            if log is not None:
+                log.log('SG1 Iris Lights warning audio failed: {}'.format(error))
+
     def _incoming_activity(self):
         gate = self.stargate
         return (str(gate.wormhole_active).lower() == 'incoming'
@@ -188,12 +225,14 @@ class IrisLights:
             auto_open_seconds = self.auto_open_seconds
             closed_since = self.closed_since
         incoming = self._incoming_activity()
+        warning_due = False
         if incoming and not self.incoming_seen:
             self.incoming_seen = True
             if self.enabled and auto_incoming and not self.manual_open_during_incoming:
                 self.set_closed(True, manual=False)
                 closed = True
                 closed_since = self.closed_since
+            warning_due = closed and self.enabled
         elif not incoming and self.incoming_seen:
             self.incoming_seen = False
             self.manual_open_during_incoming = False
@@ -202,6 +241,8 @@ class IrisLights:
                 closed = False
                 clear_pending = True
                 clear_indices = indices
+        if warning_due and self.show_closed():
+            self._play_incoming_warning()
         if (closed and auto_open_seconds and closed_since is not None
                 and now - closed_since >= auto_open_seconds):
             self.set_closed(False)
@@ -215,12 +256,7 @@ class IrisLights:
             self.pixels.show()
         if closed and not idle and not self.stargate.wormhole_active:
             if not self.steady_visible:
-                for index in range(self.count):
-                    self.pixels[index] = (0, 0, 0)
-                for index in indices:
-                    self.pixels[index] = self.RED
-                self.pixels.show()
-                self.steady_visible = True
+                self.show_closed()
             return
         self.steady_visible = False
         if self.pulse_until:

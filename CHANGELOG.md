@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0
+
+- Blocks the direct-write kawoosh animation before its first frame when the
+  physical Iris indicator is active, so only the four red pixels remain.
+- Plays the existing `Unscheduled Offworld Activation` SoundFX clip once when
+  the first four-red-pixel indication appears for an incoming connection.
+- Keeps the warning headless and server-side, and respects the SG1 audio-enable
+  setting and Lamp Mode priority.
+
 ## 1.1.0
 
 - Added headless automatic Iris close for incoming connections.
